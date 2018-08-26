@@ -3,12 +3,12 @@
  * Программа для игровой платформы на Arduino
  * made by ivanekrasov
 */
-
+//немножко макросов
 #define butCount 3
 #define buzzPin 11 
 #define ledCount 9
 #define playersCount 2
-
+//и еще чуть-чуть
 #define player1But 2   
 #define player2But 3
 #define systemBut 7
@@ -21,22 +21,21 @@
 #define yelLED 9
 #define greenLED 10
 #define blueLED 14
-
+//объявляем пины массивом размера количества юнитов, юзаем макросы для наглядности
 int buttonPins[butCount] = {player1But, systemBut, player2But};
 int ledPins[ledCount] = {player1LED, redRGB, greenRGB, blueRGB, redLED, yelLED, greenLED, player2LED, blueLED};
-int gameNum = 1;//отладка, надо вернуть в 0
-//int players = 2;
-//bool but1, but2, sysBut, gameInProgress = false;
+int gameNum = 0;
 bool last = LOW;
 bool getInColor = false;
 int gameScore = 0;
 int needColor;
-
 bool finished_game;
-volatile bool started, finished;
+//переменные для прерываний
+volatile bool started, finished; 
 volatile bool playerWon[playersCount] = {false, false};
 volatile bool playerFailed[playersCount] = {false, false};
 
+//объявления функций
 void handlePlayer1Press();
 void handlePlayer2Press();
 void handlePlayerPress(int player);
@@ -57,12 +56,12 @@ void setup()
   for (int i = 0; i < ledCount; i++) pinMode(ledPins[i], OUTPUT);
   for (int i = 0; i < butCount; i++) pinMode(buttonPins[i], INPUT_PULLUP);
   for (int player = 0; player < playersCount; ++player) {
-    attachInterrupt(INT0, handlePlayer1Press, FALLING );
+    attachInterrupt(INT0, handlePlayer1Press, FALLING );//аттачим прерывания
     attachInterrupt(INT1, handlePlayer2Press, FALLING );
   }
-  Serial.begin(9600);
 }
 
+//обрабатываем прерывания по нажатию
 void handlePlayer1Press() { handlePlayerPress(0); }
 void handlePlayer2Press() { handlePlayerPress(1); }
 
@@ -71,7 +70,7 @@ void loop()
   pressBut();
   resetGameData(); 
   catchColor();
-  /*if(button_long_state){ //работает, не удалять
+  if(button_long_state){
     Serial.print("Game number is ");
     Serial.println(gameNum);
     switch(gameNum){
@@ -93,11 +92,11 @@ void loop()
     }
     button_long_state = false;
     button_state = false;
-  }*/
+  }
 
 }
-
-void theQuickest()
+//игра №1 кто быстрее
+void theQuickest() 
 {
   button_long_state = false;
   button_state = false;
@@ -123,12 +122,10 @@ void theQuickest()
   started = true;
   finished = allPlayersFailed(); // Если оба игрока сделали фальстарт — игру нужно завершить.
   
-  while(true){
-    
+  while(true){ 
     pressBut();
-    Serial.print(playerFailed[1],playerFailed[2]);
-    Serial.print("\n");
-    if (finished_game || finished){
+    if (finished_game || finished)
+    {
         winMelody();
         delay(4000);
         theQuickest();
@@ -137,17 +134,19 @@ void theQuickest()
     if (button_long_state) break;
   }
 } 
-
-bool debounce (bool last, int button){
+//программное устранение дребезга, используется теперь только для клавиши управления
+bool debounce (bool last, int button)
+{
   bool current = digitalRead(button);
-  if (last != current){
+  if (last != current)
+  {
     delay(5);
     current = digitalRead(button);
   }
   return current;
 }
-
-void winMelody()
+//озвучиваем победу
+void winMelody() 
 {
   for (int i = 0; i < 15; i++)
   { 
@@ -155,16 +154,17 @@ void winMelody()
     delay(200);
   } 
 }
-
-void catchColor()
+//игра №2 попади в цвет
+void catchColor() 
 {
   gameScore = 0;
   int flashColor;
   resetGameData();
-  Serial.println(needColor);
-  while (true){
+  while (true)
+  {
     needColor = random(4, 8);
-    if (needColor != 8 && needColor != 7 && needColor != 5){
+    if (needColor != 8 && needColor != 7 && needColor != 5)
+    {
       digitalWrite(ledPins[needColor], HIGH);
       break;
     }
@@ -173,7 +173,8 @@ void catchColor()
   
   while (true){
     flashColor = random(4, 8);
-    if (flashColor == 7) {
+    if (flashColor == 7) 
+    {
       digitalWrite(ledPins[1], HIGH);
       digitalWrite(ledPins[2], HIGH);
       digitalWrite(ledPins[3], HIGH);
@@ -183,13 +184,15 @@ void catchColor()
       digitalWrite(ledPins[3], LOW);
       delay(500);
     }
-    else {
-    digitalWrite(flashColor, HIGH);
-    delay(500);
-    digitalWrite(flashColor, LOW);
-    delay(500);
+    else 
+    {
+      digitalWrite(flashColor, HIGH);
+      delay(500);
+      digitalWrite(flashColor, LOW);
+      delay(500);
     }
-    if (gameScore == 3){
+    if (gameScore == 3)
+    {
       winMelody();
       delay(4000);
       catchColor();
@@ -203,30 +206,13 @@ void catchMaxVal()
 {
   Serial.println("catchMaxVal");
 }
-
-void breakaway(int playerWon, int playerLost)
-{
-  digitalWrite(playerWon, HIGH);
-  tone(buzzPin, 3000, 1000);
-  while (true)
-  {
-    digitalWrite(playerLost, HIGH);
-    //winMelody();
-    delay(1000);
-    digitalWrite(playerLost, LOW);
-    delay(1000);
-    if (!debounce(last, buttonPins[1])) break;
-    
-  }
-  digitalWrite(playerWon, LOW);
-}
-
-
+//сбрасываем светодиоды и переменные
 void resetGameData() 
 {
   started  = false;
   finished = false;
-  for (int i = 0; i < playersCount; i++) {
+  for (int i = 0; i < playersCount; i++) 
+  {
     playerWon[i]    = false;
     playerFailed[i] = false;
   }
@@ -234,7 +220,7 @@ void resetGameData()
     digitalWrite(ledPins[i], LOW);
   }
 }
-
+//если оби игрока совершили фальстарт
 bool allPlayersFailed() 
 {
   bool anyoneNotFailed = false;
@@ -246,7 +232,7 @@ bool allPlayersFailed()
 }
 
 
-void handlePlayerPress(int player) {
+void handlePlayerPress(int player) { //обработка прерывания по нажатию
   if (gameNum == 0)
   {
     if (started && !finished && !playerFailed[player])
