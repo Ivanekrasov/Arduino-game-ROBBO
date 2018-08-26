@@ -44,6 +44,8 @@ void catchColor();
 void catchMaxVal();
 bool allPlayersFailed();
 void pressBut();
+void winMelody();
+void theQuickest();
 
 
 bool button_state  = false;
@@ -69,10 +71,7 @@ void loop()
 {
   pressBut();
   resetGameData(); 
-  catchColor();
   if(button_long_state){
-    Serial.print("Game number is ");
-    Serial.println(gameNum);
     switch(gameNum){
       case(0):
         theQuickest();
